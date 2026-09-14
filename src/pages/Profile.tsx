@@ -43,7 +43,7 @@ export const Profile: React.FC<ProfileProps> = ({ currentUser }) => {
           </p>
           <p className="text-xs text-slate-400 flex items-center justify-center sm:justify-start gap-1.5 pt-0.5">
             <Building2 className="w-3.5 h-3.5 text-slate-500" />
-            {currentUser.department || 'Department of Computer Science & Engineering'} &bull; DTM Campus
+            {currentUser.department || 'Department of Computer Science and Engineering'} &bull; DTM Campus
           </p>
         </div>
       </div>
@@ -71,7 +71,7 @@ export const Profile: React.FC<ProfileProps> = ({ currentUser }) => {
             <div className="flex items-center justify-between p-3 rounded-xl bg-slate-950/40 border border-white/5">
               <span className="text-slate-400 font-medium">Department</span>
               <span className="font-semibold text-white">
-                {currentUser.department || 'Computer Science & Engineering'}
+                {currentUser.department || 'B.Tech Computer Science and Engineering'}
               </span>
             </div>
             {studentDetails && (

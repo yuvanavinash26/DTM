@@ -17,7 +17,7 @@ interface StudentWeeklyChartProps {
 export const StudentWeeklyChart: React.FC<StudentWeeklyChartProps> = ({ studentName }) => {
   const isYuvan = studentName.toLowerCase().includes('yuvan');
 
-  // Official Semester V Timetable (TT) subjects ONLY:
+  // Official Semester III (2nd Year) Timetable (TT) subjects ONLY:
   // 1. Operating Systems (21CSC202J)
   // 2. Advanced Programming Practice (21CSC203P)
   // 3. Transforms and Boundary Value Problems (21MAB201T)

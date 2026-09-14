@@ -50,7 +50,7 @@ export function registerOrUpdateTeacher(
   name: string,
   identifier: string,
   password: string,
-  department: string = 'Computer Science & Engineering',
+  department: string = 'B.Tech Computer Science and Engineering',
   email?: string
 ): { success: boolean; user?: User; error?: string } {
   if (!name.trim() || !identifier.trim() || !password.trim()) {
@@ -61,7 +61,7 @@ export function registerOrUpdateTeacher(
     name: name.trim(),
     identifier: identifier.trim(),
     password: password.trim(),
-    department: department.trim() || 'Computer Science & Engineering',
+    department: department.trim() || 'B.Tech Computer Science and Engineering',
     email: email?.trim() || `${identifier.trim().toLowerCase()}@dtm.edu.in`,
   };
 
