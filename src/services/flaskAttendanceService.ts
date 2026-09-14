@@ -12,7 +12,8 @@ import { updateDeviceStatus } from './deviceService';
 import { formatShortTime } from '../utils/dateUtils';
 import { computeFinalStatus, determineVerificationMethod } from '../utils/attendanceLogic';
 
-export const DEFAULT_FLASK_ENDPOINT = 'http://localhost:8000/api/attendance';
+export const DEFAULT_FLASK_ENDPOINT =
+  (import.meta.env.VITE_FLASK_API_URL as string) || 'http://localhost:8000/api/attendance';
 const FLASK_ENDPOINT_KEY = 'dtm_flask_endpoint';
 
 export function getFlaskEndpoint(): string {
