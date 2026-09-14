@@ -16,9 +16,9 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
   showIcon = true,
 }) => {
   const sizeClasses = {
-    sm: 'text-xs px-2 py-0.5',
-    md: 'text-xs px-2.5 py-1',
-    lg: 'text-sm px-3 py-1.5',
+    sm: 'text-[11px] px-2 py-0.5 leading-tight',
+    md: 'text-xs px-2.5 py-1 leading-tight',
+    lg: 'text-xs px-3 py-1.5 font-bold leading-normal',
   }[size];
 
   // Specific RFID rendering
@@ -27,10 +27,10 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
       return (
         <span
           id={`badge-rfid-${status}`}
-          className={`inline-flex items-center gap-1.5 font-medium rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 ${sizeClasses}`}
+          className={`inline-flex items-center gap-1.5 font-semibold rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25 ${sizeClasses}`}
         >
-          {showIcon && <Check className="w-3.5 h-3.5 text-emerald-400 stroke-[2.5]" />}
-          <span>RFID ✓</span>
+          {showIcon && <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 stroke-[2.5] shrink-0" />}
+          <span className="leading-none">RFID Valid</span>
         </span>
       );
     }
@@ -38,19 +38,19 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
       return (
         <span
           id={`badge-rfid-${status}`}
-          className={`inline-flex items-center gap-1.5 font-medium rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20 ${sizeClasses}`}
+          className={`inline-flex items-center gap-1.5 font-semibold rounded-md bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/25 ${sizeClasses}`}
         >
-          {showIcon && <X className="w-3.5 h-3.5 text-rose-400 stroke-[2.5]" />}
-          <span>RFID ✕</span>
+          {showIcon && <X className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400 stroke-[2.5] shrink-0" />}
+          <span className="leading-none">RFID Invalid</span>
         </span>
       );
     }
     return (
       <span
         id={`badge-rfid-${status}`}
-        className={`inline-flex items-center gap-1.5 font-medium rounded-full bg-slate-800 text-slate-400 border border-slate-700 ${sizeClasses}`}
+        className={`inline-flex items-center gap-1 font-medium rounded-md bg-[var(--erp-card-subtle)] text-[var(--erp-text-muted)] border border-[var(--erp-border)] ${sizeClasses}`}
       >
-        <span>RFID —</span>
+        <span className="leading-none">RFID &mdash;</span>
       </span>
     );
   }
@@ -61,10 +61,10 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
       return (
         <span
           id={`badge-ble-${status}`}
-          className={`inline-flex items-center gap-1.5 font-medium rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 ${sizeClasses}`}
+          className={`inline-flex items-center gap-1.5 font-semibold rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25 ${sizeClasses}`}
         >
-          {showIcon && <Check className="w-3.5 h-3.5 text-emerald-400 stroke-[2.5]" />}
-          <span>{status === 'PRESENT' ? 'BLE PRESENT' : 'BLE ✓'}</span>
+          {showIcon && <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 stroke-[2.5] shrink-0" />}
+          <span className="leading-none">{status === 'PRESENT' ? 'BLE Present' : 'BLE In-Range'}</span>
         </span>
       );
     }
@@ -72,10 +72,10 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
       return (
         <span
           id={`badge-ble-${status}`}
-          className={`inline-flex items-center gap-1.5 font-medium rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 animate-pulse ${sizeClasses}`}
+          className={`inline-flex items-center gap-1.5 font-semibold rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/25 animate-pulse ${sizeClasses}`}
         >
-          {showIcon && <Clock className="w-3.5 h-3.5 text-amber-400" />}
-          <span>BLE •••</span>
+          {showIcon && <Clock className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />}
+          <span className="leading-none">BLE Scanning</span>
         </span>
       );
     }
@@ -83,19 +83,19 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
       return (
         <span
           id={`badge-ble-${status}`}
-          className={`inline-flex items-center gap-1.5 font-medium rounded-full bg-rose-500/15 text-rose-400 border border-rose-500/30 ${sizeClasses}`}
+          className={`inline-flex items-center gap-1.5 font-semibold rounded-md bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/25 ${sizeClasses}`}
         >
-          {showIcon && <X className="w-3.5 h-3.5 text-rose-400 stroke-[2.5]" />}
-          <span>{status === 'ABSENT' ? 'BLE ABSENT' : 'BLE ✕'}</span>
+          {showIcon && <X className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400 stroke-[2.5] shrink-0" />}
+          <span className="leading-none">{status === 'ABSENT' ? 'BLE Absent' : 'BLE Out-of-Range'}</span>
         </span>
       );
     }
     return (
       <span
         id={`badge-ble-${status}`}
-        className={`inline-flex items-center gap-1.5 font-medium rounded-full bg-slate-800 text-slate-400 border border-slate-700 ${sizeClasses}`}
+        className={`inline-flex items-center gap-1 font-medium rounded-md bg-[var(--erp-card-subtle)] text-[var(--erp-text-muted)] border border-[var(--erp-border)] ${sizeClasses}`}
       >
-        <span>BLE —</span>
+        <span className="leading-none">BLE &mdash;</span>
       </span>
     );
   }
@@ -105,10 +105,10 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
     return (
       <span
         id={`badge-final-${status}`}
-        className={`inline-flex items-center gap-1.5 font-semibold rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 ${sizeClasses}`}
+        className={`inline-flex items-center gap-1.5 font-bold rounded-md bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 ${sizeClasses}`}
       >
-        {showIcon && <Check className="w-3.5 h-3.5 text-emerald-400 stroke-[2.5]" />}
-        <span>PRESENT</span>
+        {showIcon && <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 stroke-[2.5] shrink-0" />}
+        <span className="leading-none">PRESENT</span>
       </span>
     );
   }
@@ -117,10 +117,10 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
     return (
       <span
         id={`badge-final-${status}`}
-        className={`inline-flex items-center gap-1.5 font-semibold rounded-full bg-purple-500/15 text-purple-300 border border-purple-500/30 ${sizeClasses}`}
+        className={`inline-flex items-center gap-1.5 font-bold rounded-md bg-purple-500/15 text-purple-700 dark:text-purple-300 border border-purple-500/30 ${sizeClasses}`}
       >
-        {showIcon && <Edit3 className="w-3.5 h-3.5 text-purple-400" />}
-        <span>MANUAL</span>
+        {showIcon && <Edit3 className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400 shrink-0" />}
+        <span className="leading-none">FACULTY OVERRIDE</span>
       </span>
     );
   }
@@ -129,10 +129,10 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
     return (
       <span
         id={`badge-final-${status}`}
-        className={`inline-flex items-center gap-1.5 font-semibold rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 ${sizeClasses}`}
+        className={`inline-flex items-center gap-1.5 font-bold rounded-md bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 ${sizeClasses}`}
       >
-        {showIcon && <ShieldAlert className="w-3.5 h-3.5 text-amber-400" />}
-        <span>PENDING REVIEW</span>
+        {showIcon && <ShieldAlert className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />}
+        <span className="leading-none">PENDING VERIFICATION</span>
       </span>
     );
   }
@@ -141,17 +141,17 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
     return (
       <span
         id={`badge-final-${status}`}
-        className={`inline-flex items-center gap-1.5 font-semibold rounded-full bg-rose-500/15 text-rose-300 border border-rose-500/30 ${sizeClasses}`}
+        className={`inline-flex items-center gap-1.5 font-bold rounded-md bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 ${sizeClasses}`}
       >
-        {showIcon && <X className="w-3.5 h-3.5 text-rose-400 stroke-[2.5]" />}
-        <span>ABSENT</span>
+        {showIcon && <X className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400 stroke-[2.5] shrink-0" />}
+        <span className="leading-none">ABSENT</span>
       </span>
     );
   }
 
   return (
-    <span className={`inline-flex items-center gap-1 font-medium rounded-full bg-slate-800 text-slate-300 ${sizeClasses}`}>
-      {status}
+    <span className={`inline-flex items-center gap-1 font-semibold rounded-md bg-[var(--erp-card-subtle)] text-[var(--erp-text-muted)] border border-[var(--erp-border)] ${sizeClasses}`}>
+      <span className="leading-none">{status}</span>
     </span>
   );
 };

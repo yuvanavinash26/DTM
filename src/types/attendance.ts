@@ -1,10 +1,11 @@
 export type RfidStatus = 'VERIFIED' | 'FAILED' | 'NOT_DETECTED';
 export type BleStatus = 'VERIFIED' | 'FAILED' | 'NOT_DETECTED' | 'PENDING' | 'PRESENT' | 'ABSENT';
-export type FinalAttendanceStatus = 'PRESENT' | 'ABSENT' | 'MANUALLY_MARKED' | 'PENDING';
+export type FinalAttendanceStatus = 'PRESENT' | 'ABSENT' | 'PENDING' | 'MANUALLY_MARKED' | 'NOT_ATTENDED';
 export type VerificationMethod = 'RFID_BLE' | 'MANUAL' | 'RFID_ONLY' | 'UNVERIFIED';
 
 export interface FlaskAttendanceResponse {
   student: string;
+  student_id?: string;
   phone_address?: string;
   bluetooth: 'PRESENT' | 'ABSENT' | string;
   attendance: 'PRESENT' | 'ABSENT' | string;
@@ -31,18 +32,28 @@ export type OverrideReason =
   | 'Other';
 
 export interface AttendanceRecord {
-  attendanceId: string;
+  id: string;
+  attendanceId?: string; // Backwards compatibility alias
   studentId: string;
   studentName: string;
   rfidUid: string;
-  date: string; // YYYY-MM-DD or formatted display
-  time: string; // HH:MM:SS AM/PM
-  timestamp: string; // ISO 8601
+  date: string; // e.g. "14 Sep 2026" or "2026-09-14"
+  day?: string; // "Monday", "Tuesday", etc.
+  period: number | string;
   subject: string;
+  subjectCode: string;
+  scheduledStart?: string;
+  scheduledEnd?: string;
+  time?: string; // Formatted time
+  timestamp: string; // ISO 8601
   rfidStatus: RfidStatus;
   bleStatus: BleStatus;
   finalStatus: FinalAttendanceStatus;
-  verificationMethod: VerificationMethod;
+  verificationMethod?: VerificationMethod;
+  entryTime?: string;
+  verificationTime?: string;
+  exitTime?: string;
+  exitReason?: string;
   manualOverride: boolean;
   teacherId?: string;
   teacherName?: string;

@@ -10,6 +10,7 @@ export interface Student {
   phone: string;
   avatarUrl?: string;
   bleDeviceId?: string;
+  macAddress?: string;
   // Computed / cached stats
   totalClasses: number;
   presentClasses: number;

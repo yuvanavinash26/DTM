@@ -1,12 +1,164 @@
 @import "tailwindcss";
 
 @layer base {
+  :root,
+  .theme-dark {
+    --erp-bg: #0b0f19;
+    --erp-card: #111726;
+    --erp-card-subtle: #0e1422;
+    --erp-card-hover: #161e31;
+    --erp-border: rgba(255, 255, 255, 0.08);
+    --erp-border-strong: rgba(255, 255, 255, 0.14);
+    --erp-text-main: #f8fafc;
+    --erp-text-muted: #94a3b8;
+    --erp-text-faint: #64748b;
+    --erp-accent: #10b981;
+    --erp-accent-muted: rgba(16, 185, 129, 0.12);
+  }
+
+  .theme-light {
+    color-scheme: light;
+    --erp-bg: #f8fafc;
+    --erp-card: #ffffff;
+    --erp-card-subtle: #f1f5f9;
+    --erp-card-hover: #e2e8f0;
+    --erp-border: #e2e8f0;
+    --erp-border-strong: #cbd5e1;
+    --erp-text-main: #0f172a;
+    --erp-text-muted: #475569;
+    --erp-text-faint: #64748b;
+    --erp-accent: #059669;
+    --erp-accent-muted: rgba(5, 150, 105, 0.1);
+  }
+
+  .theme-sapphire {
+    --erp-bg: #070d1e;
+    --erp-card: #0d1730;
+    --erp-card-subtle: #091124;
+    --erp-card-hover: #121e3d;
+    --erp-border: rgba(96, 165, 250, 0.12);
+    --erp-border-strong: rgba(96, 165, 250, 0.22);
+    --erp-text-main: #f0f6ff;
+    --erp-text-muted: #93c5fd;
+    --erp-text-faint: #60a5fa;
+    --erp-accent: #38bdf8;
+    --erp-accent-muted: rgba(56, 189, 248, 0.12);
+  }
+
+  .theme-emerald {
+    --erp-bg: #05140f;
+    --erp-card: #092119;
+    --erp-card-subtle: #061913;
+    --erp-card-hover: #0d2d23;
+    --erp-border: rgba(52, 211, 153, 0.12);
+    --erp-border-strong: rgba(52, 211, 153, 0.22);
+    --erp-text-main: #f0fdf4;
+    --erp-text-muted: #a7f3d0;
+    --erp-text-faint: #6ee7b7;
+    --erp-accent: #10b981;
+    --erp-accent-muted: rgba(16, 185, 129, 0.12);
+  }
+
   body {
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: var(--erp-bg);
+    color: var(--erp-text-main);
+    transition: background-color 0.25s ease, color 0.25s ease;
   }
+
   code, pre, .font-mono {
     font-family: 'JetBrains Mono', monospace;
+    font-feature-settings: 'tnum' on, 'zero' on;
   }
+}
+
+/* Automatic light theme utility overrides so legacy slate classes adapt fully */
+.theme-light .bg-slate-950,
+.theme-light .bg-slate-950\/40,
+.theme-light .bg-slate-950\/50,
+.theme-light .bg-slate-950\/60,
+.theme-light .bg-slate-950\/70,
+.theme-light .bg-slate-900,
+.theme-light .bg-slate-900\/90,
+.theme-light .bg-slate-900\/80,
+.theme-light .bg-slate-900\/60,
+.theme-light .bg-slate-800,
+.theme-light .bg-slate-800\/90 {
+  background-color: var(--erp-card-subtle) !important;
+  color: var(--erp-text-main) !important;
+}
+
+.theme-light .border-white\/5,
+.theme-light .border-white\/10,
+.theme-light .border-slate-800,
+.theme-light .border-slate-800\/80,
+.theme-light .border-slate-800\/90 {
+  border-color: var(--erp-border) !important;
+}
+
+.theme-light .text-white,
+.theme-light .text-slate-200,
+.theme-light .text-slate-300 {
+  color: var(--erp-text-main) !important;
+}
+
+.theme-light .text-slate-400 {
+  color: var(--erp-text-muted) !important;
+}
+
+.theme-light input,
+.theme-light select,
+.theme-light textarea {
+  background-color: #ffffff !important;
+  color: var(--erp-text-main) !important;
+  border-color: var(--erp-border) !important;
+}
+
+/* ERP Layout & Card Classes */
+.erp-card {
+  background-color: var(--erp-card);
+  border: 1px solid var(--erp-border);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.erp-card:hover {
+  border-color: var(--erp-border-strong);
+}
+
+.erp-card-interactive {
+  background-color: var(--erp-card);
+  border: 1px solid var(--erp-border);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.erp-card-interactive:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px -6px rgba(0, 0, 0, 0.35);
+  border-color: var(--erp-border-strong);
+}
+
+.theme-light .erp-card-interactive:hover {
+  box-shadow: 0 12px 28px -6px rgba(15, 23, 42, 0.08);
+}
+
+/* Button micro-press feedback */
+.erp-btn {
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.erp-btn:active {
+  transform: scale(0.97);
+}
+
+/* Table styling for ERP readability */
+.erp-table th {
+  letter-spacing: 0.05em;
+  font-weight: 700;
+  vertical-align: middle;
+}
+
+.erp-table td {
+  vertical-align: middle;
 }
 
 /* Custom subtle scrollbar */

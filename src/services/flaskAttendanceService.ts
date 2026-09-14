@@ -116,7 +116,7 @@ function applyFlaskAttendance(data: FlaskAttendanceResponse): void {
       s.studentId.toLowerCase() === data.student.toLowerCase()
   );
 
-  const studentId = student ? student.studentId : 'RA25110030200411';
+  const studentId = student ? student.studentId : 'RA2511003020041';
   const studentName = student ? student.name : data.student;
   const rfidUid = student ? student.rfidUid : '4A:D1:02:07';
 
@@ -166,14 +166,19 @@ function applyFlaskAttendance(data: FlaskAttendanceResponse): void {
     const finalStat: FinalAttendanceStatus = isBluetoothPresent ? 'PENDING' : 'ABSENT';
 
     updatedRecord = {
+      id: `att_${Date.now()}`,
       attendanceId: `att_${Date.now()}`,
       studentId,
       studentName,
       rfidUid,
       date: dateStr,
+      day: 'Monday',
+      period: 7,
+      subject: 'Advanced Programming Practice',
+      subjectCode: '21CSC203P',
       time: formatShortTime(now),
+      entryTime: formatShortTime(now),
       timestamp: `${dateStr}T${now.toTimeString().split(' ')[0]}+05:30`,
-      subject: 'Digital Technology & Management',
       rfidStatus: 'NOT_DETECTED',
       bleStatus,
       finalStatus: finalStat,

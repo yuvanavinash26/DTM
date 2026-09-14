@@ -8,7 +8,43 @@ export function initializeStudents(): Student[] {
   try {
     const stored = localStorage.getItem(STUDENTS_STORAGE_KEY);
     if (stored) {
-      return JSON.parse(stored);
+      const students: Student[] = JSON.parse(stored);
+      let changed = false;
+      const updated = students.map((s) => {
+        const canonical = INITIAL_STUDENTS.find(
+          (init) => init.studentId === s.studentId || init.id === s.id
+        );
+        const correctId = s.studentId === 'RA25110030200411' ? 'RA2511003020041' : s.studentId;
+        const correctSem = 'Semester III (2nd Year)';
+        const correctDept = 'B.Tech Computer Science and Engineering';
+        const correctSec = 'CSE-A';
+        const correctMac = canonical?.macAddress || s.macAddress;
+
+        if (
+          s.studentId !== correctId ||
+          s.semester !== correctSem ||
+          s.department !== correctDept ||
+          s.section !== correctSec ||
+          s.macAddress !== correctMac
+        ) {
+          changed = true;
+        }
+
+        return {
+          ...s,
+          studentId: correctId,
+          semester: correctSem,
+          department: correctDept,
+          section: correctSec,
+          macAddress: correctMac,
+          rfidUid: canonical?.rfidUid || s.rfidUid,
+          name: canonical?.name || s.name,
+        };
+      });
+      if (changed) {
+        localStorage.setItem(STUDENTS_STORAGE_KEY, JSON.stringify(updated));
+      }
+      return updated;
     }
   } catch (e) {
     console.error('Failed to parse stored students', e);

@@ -3,7 +3,7 @@ import { AttendanceRecord } from '../types/attendance';
 import { getAttendance, exportAttendanceCSV } from '../services/attendanceService';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { formatDisplayDate } from '../utils/dateUtils';
-import { Search, Filter, Download, FileSpreadsheet } from 'lucide-react';
+import { Search, Download, FileSpreadsheet } from 'lucide-react';
 
 export const AttendanceLogs: React.FC = () => {
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
@@ -39,51 +39,51 @@ export const AttendanceLogs: React.FC = () => {
 
   return (
     <div className="space-y-6 pb-12" id="attendance-logs-view">
-      {/* Header */}
+      {/* ERP Audit Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-bold tracking-tight text-white">
-            Classroom Attendance Logs
+          <h2 className="text-xl font-extrabold tracking-tight text-[var(--erp-text-main)]">
+            Institutional Attendance Audit Logs
           </h2>
-          <p className="text-xs text-slate-400 mt-0.5">
-            Audit trail of RFID card swipes, BLE beacons, and teacher manual overrides
+          <p className="text-xs text-[var(--erp-text-muted)] mt-0.5">
+            Immutable audit record of dual-factor RFID swipes, BLE beacon telemetry, and faculty overrides
           </p>
         </div>
 
         <button
           id="btn-export-logs-csv"
           onClick={exportAttendanceCSV}
-          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-xs font-bold text-slate-200 transition-colors"
+          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[var(--erp-card)] hover:bg-[var(--erp-card-hover)] border border-[var(--erp-border)] text-xs font-bold text-[var(--erp-text-main)] transition-all erp-btn shadow-sm"
         >
-          <Download className="w-3.5 h-3.5 text-indigo-400" />
-          <span>Export CSV</span>
+          <Download className="w-3.5 h-3.5 text-emerald-500" />
+          <span>Export Official CSV</span>
         </button>
       </div>
 
       {/* Filter Toolbar */}
-      <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
-        <div className="relative w-full sm:w-72">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+      <div className="p-4 rounded-xl erp-card flex flex-col sm:flex-row items-center justify-between gap-3 text-xs shadow-sm">
+        <div className="relative w-full sm:w-80">
+          <Search className="w-4 h-4 text-[var(--erp-text-faint)] absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             id="input-logs-search"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search student name, ID, or UID..."
-            className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3.5 py-2 text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-indigo-500"
+            placeholder="Search student, roll number, or RFID UID..."
+            className="w-full bg-[var(--erp-card-subtle)] border border-[var(--erp-border)] rounded-xl pl-9 pr-3.5 py-2 text-[var(--erp-text-main)] placeholder:text-[var(--erp-text-faint)] focus:outline-none focus:border-emerald-500 transition-colors"
           />
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto">
-          <span className="text-slate-400 font-semibold uppercase text-[11px] shrink-0">Filter:</span>
+        <div className="flex items-center gap-1.5 w-full sm:w-auto overflow-x-auto">
+          <span className="text-[var(--erp-text-faint)] font-bold uppercase text-[10px] shrink-0 mr-1">Filter Status:</span>
           {['ALL', 'PRESENT', 'PENDING', 'ABSENT', 'MANUAL'].map((filter) => (
             <button
               key={filter}
               onClick={() => setStatusFilter(filter)}
-              className={`px-3 py-1.5 rounded-lg font-medium transition-all ${
+              className={`px-3 py-1.5 rounded-lg font-semibold transition-all erp-btn text-xs ${
                 statusFilter === filter
-                  ? 'bg-indigo-600 text-white font-semibold shadow-sm'
-                  : 'bg-slate-950 text-slate-400 border border-slate-800 hover:text-white'
+                  ? 'bg-emerald-600 text-white shadow-sm'
+                  : 'bg-[var(--erp-card-subtle)] text-[var(--erp-text-muted)] border border-[var(--erp-border)] hover:text-[var(--erp-text-main)]'
               }`}
             >
               {filter}
@@ -92,61 +92,69 @@ export const AttendanceLogs: React.FC = () => {
         </div>
       </div>
 
-      {/* Table */}
-      <div className="rounded-2xl bg-slate-900/90 border border-slate-800 shadow-xl overflow-hidden">
+      {/* Audit Data Table */}
+      <div className="rounded-2xl border border-[var(--erp-border)] erp-card shadow-lg overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs" id="attendance-logs-table">
-            <thead className="bg-slate-950/60 text-slate-400 uppercase font-semibold border-b border-slate-800">
+          <table className="w-full text-left text-xs erp-table" id="attendance-logs-table">
+            <thead className="bg-[var(--erp-card-subtle)] text-[var(--erp-text-muted)] uppercase tracking-wider font-bold border-b border-[var(--erp-border)] text-[11px]">
               <tr>
-                <th className="px-5 py-3">Date</th>
-                <th className="px-4 py-3">Student Name</th>
-                <th className="px-4 py-3 font-mono">Student ID</th>
-                <th className="px-4 py-3">Subject</th>
-                <th className="px-4 py-3 font-mono">RFID UID</th>
-                <th className="px-4 py-3">Time</th>
-                <th className="px-4 py-3">RFID</th>
-                <th className="px-4 py-3">BLE</th>
-                <th className="px-4 py-3">Final Status</th>
-                <th className="px-5 py-3 text-right">Method / Notes</th>
+                <th className="px-5 py-3 text-left">Date</th>
+                <th className="px-4 py-3 text-left">Student Name</th>
+                <th className="px-4 py-3 font-mono text-left">Roll Number</th>
+                <th className="px-4 py-3 text-left">Course / Subject</th>
+                <th className="px-4 py-3 font-mono text-center">RFID UID</th>
+                <th className="px-4 py-3 font-mono text-center">Entry Time</th>
+                <th className="px-4 py-3 text-center">RFID Status</th>
+                <th className="px-4 py-3 text-center">BLE Status</th>
+                <th className="px-4 py-3 text-center">Final Status</th>
+                <th className="px-5 py-3 text-right">Audit Method / Notes</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/60">
+            <tbody className="divide-y divide-[var(--erp-border)]">
               {filtered.map((rec) => (
-                <tr key={rec.attendanceId} className="hover:bg-slate-800/40 transition-colors">
-                  <td className="px-5 py-3.5 font-medium text-slate-200 whitespace-nowrap">
+                <tr key={rec.attendanceId} className="hover:bg-[var(--erp-card-hover)] transition-colors">
+                  <td className="px-5 py-3.5 font-medium text-[var(--erp-text-main)] whitespace-nowrap text-left">
                     {formatDisplayDate(rec.date)}
                   </td>
-                  <td className="px-4 py-3.5 font-bold text-white whitespace-nowrap">
+                  <td className="px-4 py-3.5 font-bold text-[var(--erp-text-main)] whitespace-nowrap text-left">
                     {rec.studentName}
                   </td>
-                  <td className="px-4 py-3.5 font-mono text-slate-300 whitespace-nowrap">
+                  <td className="px-4 py-3.5 font-mono text-[var(--erp-text-muted)] whitespace-nowrap text-left tabular-nums">
                     {rec.studentId}
                   </td>
-                  <td className="px-4 py-3.5 text-slate-300 whitespace-nowrap">
+                  <td className="px-4 py-3.5 text-[var(--erp-text-main)] whitespace-nowrap text-left">
                     {rec.subject}
                   </td>
-                  <td className="px-4 py-3.5 font-mono text-indigo-300 whitespace-nowrap">
+                  <td className="px-4 py-3.5 font-mono text-emerald-500 whitespace-nowrap text-center tabular-nums">
                     {rec.rfidUid}
                   </td>
-                  <td className="px-4 py-3.5 font-mono text-slate-300 whitespace-nowrap">
+                  <td className="px-4 py-3.5 font-mono text-[var(--erp-text-main)] whitespace-nowrap text-center tabular-nums">
                     {rec.time}
                   </td>
-                  <td className="px-4 py-3.5">
-                    <StatusBadge type="rfid" status={rec.rfidStatus} size="sm" />
+                  <td className="px-4 py-3.5 text-center">
+                    <div className="inline-flex justify-center">
+                      <StatusBadge type="rfid" status={rec.rfidStatus} size="sm" />
+                    </div>
                   </td>
-                  <td className="px-4 py-3.5">
-                    <StatusBadge type="ble" status={rec.bleStatus} size="sm" />
+                  <td className="px-4 py-3.5 text-center">
+                    <div className="inline-flex justify-center">
+                      <StatusBadge type="ble" status={rec.bleStatus} size="sm" />
+                    </div>
                   </td>
-                  <td className="px-4 py-3.5">
-                    <StatusBadge type="final" status={rec.finalStatus} size="sm" />
+                  <td className="px-4 py-3.5 text-center">
+                    <div className="inline-flex justify-center">
+                      <StatusBadge type="final" status={rec.finalStatus} size="sm" />
+                    </div>
                   </td>
-                  <td className="px-5 py-3.5 text-right text-slate-400">
+                  <td className="px-5 py-3.5 text-right text-[var(--erp-text-muted)] whitespace-nowrap">
                     {rec.manualOverride ? (
-                      <span className="text-purple-400 font-semibold">
-                        Manual: {rec.reason}
+                      <span className="text-purple-500 font-semibold text-xs">
+                        Faculty Override ({rec.reason})
                       </span>
                     ) : (
-                      <span className="font-mono text-[11px]">{rec.verificationMethod}</span>
+                      <span className="font-mono text-[11px] bg-[var(--erp-card-subtle)] px-2 py-0.5 rounded border border-[var(--erp-border)]">
+                        {rec.verificationMethod}
+                      </span>
                     )}
                   </td>
                 </tr>
@@ -158,3 +166,4 @@ export const AttendanceLogs: React.FC = () => {
     </div>
   );
 };
+

@@ -9,8 +9,13 @@ import {
 import { INITIAL_ATTENDANCE_RECORDS } from '../data/attendance';
 import { INITIAL_STUDENTS } from '../data/students';
 import { recordDeviceScan } from './deviceService';
+import { getCurrentClass, isAttendanceActive } from './timetableService';
 import { formatDate, formatShortTime } from '../utils/dateUtils';
-import { computeFinalStatus, determineVerificationMethod } from '../utils/attendanceLogic';
+import {
+  computeFinalStatus,
+  determineVerificationMethod,
+  dispatchAttendanceToast,
+} from '../utils/attendanceLogic';
 
 export { fetchAttendanceStatus } from './flaskAttendanceService';
 
@@ -20,7 +25,19 @@ export function getAttendanceRecordsInternal(): AttendanceRecord[] {
   try {
     const stored = localStorage.getItem(ATTENDANCE_STORAGE_KEY);
     if (stored) {
-      return JSON.parse(stored);
+      const parsed: AttendanceRecord[] = JSON.parse(stored);
+      let changed = false;
+      const updated = parsed.map((r) => {
+        if (r.studentId === 'RA25110030200411') {
+          changed = true;
+          return { ...r, studentId: 'RA2511003020041' };
+        }
+        return r;
+      });
+      if (changed) {
+        localStorage.setItem(ATTENDANCE_STORAGE_KEY, JSON.stringify(updated));
+      }
+      return updated;
     }
   } catch (e) {
     console.error('Failed to read stored attendance', e);
@@ -31,7 +48,7 @@ export function getAttendanceRecordsInternal(): AttendanceRecord[] {
 
 export function saveAttendanceRecords(records: AttendanceRecord[]) {
   localStorage.setItem(ATTENDANCE_STORAGE_KEY, JSON.stringify(records));
-  // Dispatch custom event for current window
+  // Dispatch custom event for cross-component and cross-tab reactive synchronization
   window.dispatchEvent(new CustomEvent('dtm_attendance_update', { detail: records }));
 }
 
@@ -55,7 +72,9 @@ export async function getTodayAttendance(): Promise<AttendanceRecord[]> {
 }
 
 /**
- * Simulates or handles future incoming ESP32 RFID scan POST /api/attendance/rfid
+ * Handles RFID tap verification.
+ * Strictly verifies that the current timetable status is ATTENDANCE ACTIVE.
+ * If break, lunch, or no class: refuses attendance and notifies teacher.
  */
 export async function recordRFIDScan(
   rfidUid: string,
@@ -68,9 +87,30 @@ export async function recordRFIDScan(
   );
 
   if (!student) {
+    dispatchAttendanceToast({
+      title: 'Unknown RFID Card',
+      statusText: `UID: ${cleanUid} not registered`,
+      variant: 'rose',
+    });
     return {
       success: false,
       message: `Unknown RFID Tag: ${cleanUid}. Student not registered in system.`,
+    };
+  }
+
+  // Check timetable status
+  const currentClass = getCurrentClass();
+  if (currentClass.attendanceMode !== 'ACTIVE') {
+    dispatchAttendanceToast({
+      title: 'Attendance Inactive',
+      studentName: student.name,
+      studentId: student.studentId,
+      statusText: currentClass.statusMessage,
+      variant: 'amber',
+    });
+    return {
+      success: false,
+      message: `Attendance is currently inactive (${currentClass.statusMessage}). Scans are only recorded during scheduled class periods.`,
     };
   }
 
@@ -80,8 +120,11 @@ export async function recordRFIDScan(
   const isoTimestamp = timestamp || `${dateStr}T${now.toTimeString().split(' ')[0]}+05:30`;
 
   const records = getAttendanceRecordsInternal();
+  const periodNum = currentClass.currentPeriod || 7;
+
+  // Find record for this student for today AND this specific period (period-based attendance)
   const existingIndex = records.findIndex(
-    (r) => r.date === dateStr && r.studentId === student.studentId
+    (r) => r.date === dateStr && r.period === periodNum && r.studentId === student.studentId
   );
 
   let updatedRecord: AttendanceRecord;
@@ -95,6 +138,7 @@ export async function recordRFIDScan(
     updatedRecord = {
       ...existing,
       time: timeStr,
+      entryTime: timeStr,
       timestamp: isoTimestamp,
       rfidStatus: newRfid,
       bleStatus: newBle,
@@ -106,21 +150,28 @@ export async function recordRFIDScan(
     records[existingIndex] = updatedRecord;
   } else {
     updatedRecord = {
-      attendanceId: `att_${Date.now()}`,
+      id: `att_${Date.now()}_${student.studentId}`,
+      attendanceId: `att_${Date.now()}_${student.studentId}`,
       studentId: student.studentId,
       studentName: student.name,
       rfidUid: cleanUid,
       date: dateStr,
+      day: currentClass.currentDay,
+      period: periodNum,
+      subject: currentClass.currentSubject,
+      subjectCode: currentClass.subjectCode,
+      scheduledStart: currentClass.startTime,
+      scheduledEnd: currentClass.endTime,
       time: timeStr,
+      entryTime: timeStr,
       timestamp: isoTimestamp,
-      subject: 'Digital Technology & Management',
       rfidStatus: 'VERIFIED',
       bleStatus: 'PENDING',
       finalStatus: 'PENDING',
       verificationMethod: 'RFID_ONLY',
       manualOverride: false,
       deviceId,
-      rssi: -50,
+      rssi: -48,
     };
     records.unshift(updatedRecord);
   }
@@ -128,25 +179,21 @@ export async function recordRFIDScan(
   saveAttendanceRecords(records);
   recordDeviceScan(cleanUid, student.name, -48);
 
-  // Broadcast toast event
-  window.dispatchEvent(
-    new CustomEvent('dtm_toast_event', {
-      detail: {
-        type: 'rfid_scan',
-        title: 'RFID Card Scanned',
-        studentName: student.name,
-        studentId: student.studentId,
-        statusText: 'RFID ✓ | BLE Pending...',
-        variant: 'amber',
-      },
-    })
-  );
+  // Exact toast required by prompt:
+  // "RFID Verified \n Yuvan Avinash \n RA2511003020041 \n BLE verification pending."
+  dispatchAttendanceToast({
+    title: 'RFID Verified',
+    studentName: student.name,
+    studentId: student.studentId,
+    statusText: 'BLE verification pending...',
+    variant: 'amber',
+  });
 
   return { success: true, record: updatedRecord, message: 'RFID scan registered' };
 }
 
 /**
- * Simulates or handles future incoming ESP32/Phone BLE verification POST /api/attendance/ble
+ * Handles Bluetooth BLE verification for the active student session
  */
 export async function recordBLEVerification(
   studentId: string,
@@ -156,9 +203,18 @@ export async function recordBLEVerification(
 ): Promise<{ success: boolean; record?: AttendanceRecord; message: string }> {
   const records = getAttendanceRecordsInternal();
   const dateStr = '2026-09-14';
-  const index = records.findIndex(
-    (r) => r.date === dateStr && r.studentId === studentId
+  const currentClass = getCurrentClass();
+  const periodNum = currentClass.currentPeriod || 7;
+
+  // Match current period or today's latest record
+  let index = records.findIndex(
+    (r) => r.date === dateStr && r.period === periodNum && r.studentId === studentId
   );
+  if (index < 0) {
+    index = records.findIndex(
+      (r) => r.date === dateStr && r.studentId === studentId
+    );
+  }
 
   if (index < 0) {
     return {
@@ -175,11 +231,13 @@ export async function recordBLEVerification(
     false
   );
 
+  const now = new Date();
   const updatedRecord: AttendanceRecord = {
     ...existing,
     bleStatus: newBleStatus,
     finalStatus: finalStat,
     rssi,
+    verificationTime: formatShortTime(now),
     verificationMethod: determineVerificationMethod(existing.rfidStatus, newBleStatus, false),
   };
 
@@ -188,34 +246,73 @@ export async function recordBLEVerification(
   recordDeviceScan(existing.rfidUid, existing.studentName, rssi);
 
   if (verified) {
-    window.dispatchEvent(
-      new CustomEvent('dtm_toast_event', {
-        detail: {
-          type: 'ble_verified',
-          title: 'Attendance Verified',
-          studentName: existing.studentName,
-          studentId: existing.studentId,
-          statusText: 'RFID ✓ | BLE ✓ | PRESENT',
-          variant: 'emerald',
-        },
-      })
-    );
+    // Exact prompt required toast:
+    // "Attendance Verified \n Yuvan Avinash \n RFID ✓ \n BLE ✓ \n PRESENT"
+    dispatchAttendanceToast({
+      title: 'Attendance Verified',
+      studentName: existing.studentName,
+      studentId: existing.studentId,
+      statusText: 'RFID ✓  BLE ✓  PRESENT',
+      variant: 'emerald',
+    });
   } else {
-    window.dispatchEvent(
-      new CustomEvent('dtm_toast_event', {
-        detail: {
-          type: 'ble_failed',
-          title: 'Verification Required',
-          studentName: existing.studentName,
-          studentId: existing.studentId,
-          statusText: 'RFID ✓ | BLE ✕ | Teacher action required',
-          variant: 'rose',
-        },
-      })
-    );
+    // Exact prompt required toast:
+    // "Verification Required \n Yuvan Avinash \n RFID ✓ \n BLE ✕ \n Teacher review required."
+    dispatchAttendanceToast({
+      title: 'Verification Required',
+      studentName: existing.studentName,
+      studentId: existing.studentId,
+      statusText: 'RFID ✓  BLE ✕  Teacher review required',
+      variant: 'rose',
+    });
   }
 
   return { success: true, record: updatedRecord, message: 'BLE verification processed' };
+}
+
+/**
+ * Handles 30-Second BLE Out-of-Range Expiry
+ */
+export async function recordBLEExit(
+  studentId: string,
+  exitReason: string = 'BLE_OUT_OF_RANGE_30_SECONDS'
+): Promise<{ success: boolean; record?: AttendanceRecord; message: string }> {
+  const records = getAttendanceRecordsInternal();
+  const dateStr = '2026-09-14';
+
+  const index = records.findIndex(
+    (r) => r.date === dateStr && r.studentId === studentId
+  );
+
+  if (index < 0) {
+    return { success: false, message: 'No record found' };
+  }
+
+  const existing = records[index];
+  const now = new Date();
+  const exitTime = formatShortTime(now);
+
+  const updatedRecord: AttendanceRecord = {
+    ...existing,
+    bleStatus: 'FAILED',
+    finalStatus: 'PENDING',
+    exitTime,
+    exitReason,
+    verificationMethod: 'RFID_ONLY',
+  };
+
+  records[index] = updatedRecord;
+  saveAttendanceRecords(records);
+
+  dispatchAttendanceToast({
+    title: 'Verification Required',
+    studentName: existing.studentName,
+    studentId: existing.studentId,
+    statusText: 'BLE 30s Expiry Reached (Exit Confirmed)',
+    variant: 'rose',
+  });
+
+  return { success: true, record: updatedRecord, message: 'BLE exit recorded' };
 }
 
 /**
@@ -228,22 +325,17 @@ export async function markManualAttendance(
   note?: string,
   teacherId: string = 'TCH001',
   teacherName: string = 'Class Teacher'
-): Promise<{ success: boolean; record?: AttendanceRecord }> {
+): Promise<{ success: boolean; record?: AttendanceRecord; message: string }> {
   const records = getAttendanceRecordsInternal();
   const dateStr = '2026-09-14';
-  const student = INITIAL_STUDENTS.find((s) => s.studentId === studentId);
 
-  if (!student) {
-    return { success: false };
-  }
-
-  const index = records.findIndex(
+  let index = records.findIndex(
     (r) => r.date === dateStr && r.studentId === studentId
   );
 
+  const student = INITIAL_STUDENTS.find((s) => s.studentId === studentId);
   const now = new Date();
   const timeStr = formatShortTime(now);
-  const iso = `${dateStr}T${now.toTimeString().split(' ')[0]}+05:30`;
 
   let updatedRecord: AttendanceRecord;
 
@@ -251,26 +343,31 @@ export async function markManualAttendance(
     const existing = records[index];
     updatedRecord = {
       ...existing,
-      finalStatus: status === 'PRESENT' ? 'MANUALLY_MARKED' : 'ABSENT',
       manualOverride: true,
-      verificationMethod: 'MANUAL',
+      finalStatus: status === 'PRESENT' ? 'MANUALLY_MARKED' : 'ABSENT',
       teacherId,
       teacherName,
       reason,
-      note: note || '',
-      time: existing.time !== '—' ? existing.time : timeStr,
+      note: note || 'Manually confirmed by faculty',
+      verificationMethod: 'MANUAL',
     };
     records[index] = updatedRecord;
   } else {
+    // If no RFID record exists yet for today
+    const currentClass = getCurrentClass();
     updatedRecord = {
-      attendanceId: `att_${Date.now()}`,
-      studentId: student.studentId,
-      studentName: student.name,
-      rfidUid: student.rfidUid,
+      id: `att_manual_${Date.now()}`,
+      attendanceId: `att_manual_${Date.now()}`,
+      studentId,
+      studentName: student ? student.name : studentId,
+      rfidUid: student ? student.rfidUid : 'MANUAL',
       date: dateStr,
+      day: currentClass.currentDay,
+      period: currentClass.currentPeriod || 7,
+      subject: currentClass.currentSubject,
+      subjectCode: currentClass.subjectCode,
       time: timeStr,
-      timestamp: iso,
-      subject: 'Digital Technology & Management',
+      timestamp: `${dateStr}T${now.toTimeString().split(' ')[0]}+05:30`,
       rfidStatus: 'NOT_DETECTED',
       bleStatus: 'NOT_DETECTED',
       finalStatus: status === 'PRESENT' ? 'MANUALLY_MARKED' : 'ABSENT',
@@ -279,155 +376,151 @@ export async function markManualAttendance(
       teacherId,
       teacherName,
       reason,
-      note: note || '',
-      deviceId: 'DTM-ESP32-01',
+      note: note || 'Manually confirmed by faculty',
+      deviceId: 'MANUAL_PORTAL',
     };
     records.unshift(updatedRecord);
   }
 
   saveAttendanceRecords(records);
 
-  window.dispatchEvent(
-    new CustomEvent('dtm_toast_event', {
-      detail: {
-        type: 'manual_override',
-        title: 'Attendance Updated',
-        studentName: student.name,
-        studentId: student.studentId,
-        statusText: `Manually verified by ${teacherName} (${status})`,
-        variant: 'purple',
-      },
-    })
-  );
+  // Exact prompt required toast:
+  // "Attendance Updated \n Manually verified by Class Teacher"
+  dispatchAttendanceToast({
+    title: 'Attendance Updated',
+    studentName: student?.name,
+    studentId,
+    statusText: 'Manually verified by Class Teacher',
+    variant: 'purple',
+  });
 
-  return { success: true, record: updatedRecord };
+  return { success: true, record: updatedRecord, message: 'Manual override applied successfully' };
 }
 
 /**
- * Resets today's verification back to initial session state for smooth evaluation
+ * Calculates real aggregate attendance statistics from records
  */
-export async function resetTodaysVerification(): Promise<void> {
-  const records = getAttendanceRecordsInternal();
-  const dateStr = '2026-09-14';
-
-  const nonToday = records.filter((r) => r.date !== dateStr);
-  const initialToday = INITIAL_ATTENDANCE_RECORDS.filter((r) => r.date === dateStr);
-
-  const resetRecords = [...initialToday, ...nonToday];
-  saveAttendanceRecords(resetRecords);
-
-  window.dispatchEvent(
-    new CustomEvent('dtm_toast_event', {
-      detail: {
-        type: 'reset',
-        title: 'Session Synchronized',
-        studentName: 'Classroom C-304',
-        statusText: 'Verification state returned to live session baseline',
-        variant: 'blue',
-      },
-    })
-  );
-}
-
-/**
- * Aggregate stats calculation
- */
-export async function getAttendanceStatistics(): Promise<AttendanceStats> {
-  const records = getAttendanceRecordsInternal();
-  const dateStr = '2026-09-14';
-  const todayRecords = records.filter((r) => r.date === dateStr);
-
+export async function getAttendanceStatistics(filterDate?: string): Promise<AttendanceStats> {
+  const records = await getAttendance(filterDate || '2026-09-14');
   const totalStudents = INITIAL_STUDENTS.length;
-  const presentToday = todayRecords.filter(
+
+  const presentCount = records.filter(
     (r) => r.finalStatus === 'PRESENT' || r.finalStatus === 'MANUALLY_MARKED'
   ).length;
-  const absentToday = todayRecords.filter((r) => r.finalStatus === 'ABSENT').length;
-  const pendingToday = todayRecords.filter((r) => r.finalStatus === 'PENDING').length;
 
-  const rfidVerifiedCount = todayRecords.filter((r) => r.rfidStatus === 'VERIFIED').length;
-  const bleVerifiedCount = todayRecords.filter((r) => r.bleStatus === 'VERIFIED').length;
-  const manualOverrideCount = todayRecords.filter((r) => r.manualOverride).length;
+  const absentCount = records.filter((r) => r.finalStatus === 'ABSENT').length;
+  const pendingCount = records.filter((r) => r.finalStatus === 'PENDING').length;
 
-  const rfidFailuresCount = todayRecords.filter((r) => r.rfidStatus === 'FAILED').length;
-  const bleFailuresCount = todayRecords.filter((r) => r.bleStatus === 'FAILED').length;
+  const rfidVerified = records.filter((r) => r.rfidStatus === 'VERIFIED').length;
+  const bleVerified = records.filter((r) => r.bleStatus === 'VERIFIED' || r.bleStatus === 'PRESENT').length;
+  const manualOverrides = records.filter((r) => r.manualOverride).length;
 
-  const evaluated = presentToday + absentToday;
-  const rate = evaluated > 0 ? Number(((presentToday / totalStudents) * 100).toFixed(0)) : 100;
+  const rfidFailures = records.filter((r) => r.rfidStatus === 'FAILED').length;
+  const bleFailures = records.filter((r) => r.bleStatus === 'FAILED' || r.bleStatus === 'ABSENT').length;
+
+  const denominator = presentCount + absentCount;
+  const rate = denominator > 0 ? Number(((presentCount / denominator) * 100).toFixed(1)) : 100;
 
   return {
     totalStudents,
-    presentToday,
-    absentToday,
-    pendingToday,
+    presentToday: presentCount,
+    absentToday: absentCount,
+    pendingToday: pendingCount,
     attendanceRate: rate,
-    rfidVerifiedCount,
-    bleVerifiedCount,
-    manualOverrideCount,
-    rfidFailuresCount,
-    bleFailuresCount,
+    rfidVerifiedCount: rfidVerified,
+    bleVerifiedCount: bleVerified,
+    manualOverrideCount: manualOverrides,
+    rfidFailuresCount: rfidFailures,
+    bleFailuresCount: bleFailures,
   };
 }
 
-export async function getWeeklyAttendance(): Promise<WeeklyAttendancePoint[]> {
+export async function getWeeklyTrends(): Promise<WeeklyAttendancePoint[]> {
   return [
-    { day: 'Monday', date: '08 Sep', presentCount: 1, absentCount: 1, rate: 50 },
-    { day: 'Tuesday', date: '09 Sep', presentCount: 2, absentCount: 0, rate: 100 },
-    { day: 'Wednesday', date: '10 Sep', presentCount: 1, absentCount: 1, rate: 50 },
-    { day: 'Thursday', date: '11 Sep', presentCount: 2, absentCount: 0, rate: 100 },
-    { day: 'Friday', date: '12 Sep', presentCount: 2, absentCount: 0, rate: 100 },
+    { day: 'Monday', date: '08 Sep', presentCount: 2, absentCount: 0, rate: 100.0 },
+    { day: 'Tuesday', date: '09 Sep', presentCount: 2, absentCount: 0, rate: 100.0 },
+    { day: 'Wednesday', date: '10 Sep', presentCount: 1, absentCount: 1, rate: 50.0 },
+    { day: 'Thursday', date: '11 Sep', presentCount: 2, absentCount: 0, rate: 100.0 },
+    { day: 'Friday', date: '12 Sep', presentCount: 2, absentCount: 0, rate: 100.0 },
   ];
 }
 
+/**
+ * Generates and downloads a real CSV file using active application data
+ */
 export function exportAttendanceCSV(): void {
   const records = getAttendanceRecordsInternal();
   const headers = [
-    'Attendance ID',
-    'Date',
-    'Time',
     'Student ID',
     'Student Name',
+    'Date',
+    'Day',
+    'Period',
     'Subject',
+    'Subject Code',
     'RFID UID',
     'RFID Status',
     'BLE Status',
     'Final Status',
     'Verification Method',
+    'Entry Time',
+    'RSSI (dBm)',
     'Manual Override',
-    'Verified By',
-    'Reason/Note',
+    'Teacher ID',
+    'Teacher Reason',
+    'Teacher Note',
   ];
 
-  const rows = records.map((r) => [
-    r.attendanceId,
-    r.date,
-    r.time,
-    r.studentId,
-    `"${r.studentName}"`,
-    `"${r.subject}"`,
-    r.rfidUid,
-    r.rfidStatus,
-    r.bleStatus,
-    r.finalStatus,
-    r.verificationMethod,
-    r.manualOverride ? 'YES' : 'NO',
-    `"${r.teacherName || 'System'}"`,
-    `"${(r.reason || '') + (r.note ? ' - ' + r.note : '')}"`,
-  ]);
+  const csvRows = [headers.join(',')];
 
-  const csvContent = [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  for (const r of records) {
+    const row = [
+      `"${r.studentId}"`,
+      `"${r.studentName}"`,
+      `"${r.date}"`,
+      `"${r.day || 'Monday'}"`,
+      `"P${r.period}"`,
+      `"${r.subject.replace(/"/g, '""')}"`,
+      `"${r.subjectCode}"`,
+      `"${r.rfidUid}"`,
+      `"${r.rfidStatus}"`,
+      `"${r.bleStatus}"`,
+      `"${r.finalStatus}"`,
+      `"${r.verificationMethod || 'RFID_BLE'}"`,
+      `"${r.entryTime || r.time || '—'}"`,
+      `"${r.rssi !== undefined ? r.rssi : 'N/A'}"`,
+      `"${r.manualOverride ? 'YES' : 'NO'}"`,
+      `"${r.teacherId || ''}"`,
+      `"${(r.reason || '').replace(/"/g, '""')}"`,
+      `"${(r.note || '').replace(/"/g, '""')}"`,
+    ];
+    csvRows.push(row.join(','));
+  }
+
+  const csvString = csvRows.join('\r\n');
+  const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.setAttribute('href', url);
-  link.setAttribute('download', `DTM_Attendance_Report_${formatDate(new Date())}.csv`);
+  link.setAttribute('download', `DTM_Attendance_Report_${new Date().toISOString().split('T')[0]}.csv`);
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+
+  dispatchAttendanceToast({
+    title: 'Report Exported',
+    statusText: `${records.length} records exported to CSV successfully`,
+    variant: 'emerald',
+  });
 }
 
+/**
+ * Resets attendance data back to default authoritative baseline
+ */
 export function resetAllDataToDefault(): void {
+  localStorage.removeItem(ATTENDANCE_STORAGE_KEY);
   localStorage.setItem(ATTENDANCE_STORAGE_KEY, JSON.stringify(INITIAL_ATTENDANCE_RECORDS));
-  localStorage.removeItem('dtm_esp32_device_state');
   window.dispatchEvent(new CustomEvent('dtm_attendance_update', { detail: INITIAL_ATTENDANCE_RECORDS }));
-  window.dispatchEvent(new CustomEvent('dtm_device_update', {}));
 }
+

@@ -3,6 +3,7 @@ import { Student } from '../../types/student';
 import { AttendanceRecord, OverrideReason } from '../../types/attendance';
 import { StatusBadge } from '../ui/StatusBadge';
 import { markManualAttendance } from '../../services/attendanceService';
+import { getCurrentClass } from '../../services/timetableService';
 import { X, Check, ShieldCheck } from 'lucide-react';
 
 interface ManualAttendanceModalProps {
@@ -29,6 +30,7 @@ export const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
   onClose,
   onSaved,
 }) => {
+  const currentClass = getCurrentClass();
   const [selectedStatus, setSelectedStatus] = useState<'PRESENT' | 'ABSENT'>('PRESENT');
   const [selectedReason, setSelectedReason] = useState<OverrideReason>(
     currentRecord?.bleStatus === 'FAILED'
@@ -79,7 +81,9 @@ export const ManualAttendanceModal: React.FC<ManualAttendanceModalProps> = ({
             </div>
             <div>
               <h3 className="text-base font-bold text-white">Teacher Attendance Override</h3>
-              <p className="text-xs text-slate-400">Classroom C-304 &bull; Digital Technology & Management</p>
+              <p className="text-xs text-slate-400">
+                Period {currentClass.currentPeriod || 7} &bull; {currentClass.currentSubject} ({currentClass.subjectCode})
+              </p>
             </div>
           </div>
           <button

@@ -1,4 +1,9 @@
-import { FinalAttendanceStatus, RfidStatus, BleStatus, VerificationMethod } from '../types/attendance';
+import {
+  FinalAttendanceStatus,
+  RfidStatus,
+  BleStatus,
+  VerificationMethod,
+} from '../types/attendance';
 
 export function computeFinalStatus(
   rfidStatus: RfidStatus,
@@ -9,7 +14,7 @@ export function computeFinalStatus(
     return 'MANUALLY_MARKED';
   }
 
-  if (rfidStatus === 'VERIFIED' && bleStatus === 'VERIFIED') {
+  if (rfidStatus === 'VERIFIED' && (bleStatus === 'VERIFIED' || bleStatus === 'PRESENT')) {
     return 'PRESENT';
   }
 
@@ -17,7 +22,7 @@ export function computeFinalStatus(
     return 'PENDING';
   }
 
-  if (rfidStatus === 'VERIFIED' && bleStatus === 'FAILED') {
+  if (rfidStatus === 'VERIFIED' && (bleStatus === 'FAILED' || bleStatus === 'ABSENT')) {
     return 'PENDING'; // teacher review required
   }
 
@@ -34,7 +39,29 @@ export function determineVerificationMethod(
   manualOverride: boolean
 ): VerificationMethod {
   if (manualOverride) return 'MANUAL';
-  if (rfidStatus === 'VERIFIED' && bleStatus === 'VERIFIED') return 'RFID_BLE';
+  if (rfidStatus === 'VERIFIED' && (bleStatus === 'VERIFIED' || bleStatus === 'PRESENT')) return 'RFID_BLE';
   if (rfidStatus === 'VERIFIED') return 'RFID_ONLY';
   return 'UNVERIFIED';
+}
+
+/**
+ * Dispatches standard system toasts matching exact specification
+ */
+export function dispatchAttendanceToast(detail: {
+  title: string;
+  studentName?: string;
+  studentId?: string;
+  statusText: string;
+  variant?: 'emerald' | 'amber' | 'rose' | 'purple' | 'blue';
+}) {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(
+      new CustomEvent('dtm_toast_event', {
+        detail: {
+          ...detail,
+          id: `toast_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`,
+        },
+      })
+    );
+  }
 }
