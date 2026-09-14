@@ -1,0 +1,6 @@
+{
+  "name": "DTM Smart Attendance",
+  "description": "Smart RFID + BLE classroom attendance platform for college classrooms with live monitoring and verification.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

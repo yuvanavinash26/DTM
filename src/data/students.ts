@@ -1,0 +1,36 @@
+import { Student } from '../types/student';
+
+export const INITIAL_STUDENTS: Student[] = [
+  {
+    id: 'std_01',
+    studentId: 'RA25110030200411',
+    name: 'Yuvan Avinash',
+    rfidUid: '4A:D1:02:07',
+    department: 'B.Tech CSE',
+    semester: 'Semester V',
+    section: 'CSE-A',
+    email: 'yuvan.avinash@dtm.edu.in',
+    phone: '+91 98401 23456',
+    bleDeviceId: 'DTM_BLE_YUVAN',
+    totalClasses: 19,
+    presentClasses: 18,
+    absentClasses: 1,
+    attendancePercentage: 94.7,
+  },
+  {
+    id: 'std_02',
+    studentId: 'RA2511003020043',
+    name: 'Krishothaman',
+    rfidUid: '51:6C:16:06',
+    department: 'B.Tech CSE',
+    semester: 'Semester V',
+    section: 'CSE-A',
+    email: 'krishothaman@dtm.edu.in',
+    phone: '+91 98402 34567',
+    bleDeviceId: 'DTM_BLE_KRISH',
+    totalClasses: 19,
+    presentClasses: 17,
+    absentClasses: 2,
+    attendancePercentage: 89.5,
+  },
+];
