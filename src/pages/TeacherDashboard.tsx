@@ -159,7 +159,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ onViewStuden
             </div>
 
             <p className="text-xs text-[var(--erp-text-muted)] font-medium pt-1">
-              Indian Standard Time (Asia/Kolkata) &bull; Verified Biometric Gateway C-304
+              Indian Standard Time (Asia/Kolkata) &bull; Verified Biometric Gateway &bull; <strong className="text-emerald-500">{activeVenue}</strong>
             </p>
           </div>
 
